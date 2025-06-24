@@ -46,7 +46,7 @@ public class DefaultTeam {
     }
     
     Tree2D arbre = construireArbre(points, mst, 0, new boolean[points.size()]);
-    return optimiserBarycentre(arbre, points, mst);
+    return optimiserFermat(arbre, points, mst);
   }
 
   private int racine(int[] parent, int x) {
@@ -68,8 +68,8 @@ public class DefaultTeam {
     return new Tree2D(points.get(noeud), enfants);
   }
   
-  // Optimisation barycentre
-  private Tree2D optimiserBarycentre(Tree2D arbre, ArrayList<Point> pointsOriginaux, ArrayList<int[]> mst) {
+  // Optimisation Fermat simplifiée
+  private Tree2D optimiserFermat(Tree2D arbre, ArrayList<Point> pointsOriginaux, ArrayList<int[]> mst) {
     for (int i = 0; i < pointsOriginaux.size(); i++) {
       ArrayList<Integer> voisins = new ArrayList<Integer>();
       
@@ -84,41 +84,54 @@ public class DefaultTeam {
         Point b = pointsOriginaux.get(voisins.get(0));
         Point c = pointsOriginaux.get(voisins.get(1));
         
-        Point barycentre = new Point((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3);
-
-        double distOriginale = distance(a, b) + distance(a, c);
-        double distBarycentre = distance(barycentre, b) + distance(barycentre, c) + distance(a, barycentre);
+        // Point Fermat simplifié (médiane géométrique)
+        Point fermat = medianeFermat(a, b, c);
         
-        if (distBarycentre < distOriginale) {
+        // Vérifier amélioration
+        double distOriginale = distance(a, b) + distance(a, c);
+        double distFermat = distance(fermat, a) + distance(fermat, b) + distance(fermat, c);
+        
+        if (distFermat < distOriginale) {
           ArrayList<Point> nouveauxPoints = new ArrayList<Point>(pointsOriginaux);
-          nouveauxPoints.add(barycentre);
+          nouveauxPoints.add(fermat);
           
-                     ArrayList<int[]> nouveauMst = new ArrayList<int[]>(mst);
-           final int idx = i;
-           final int v0 = voisins.get(0);
-           final int v1 = voisins.get(1);
-           nouveauMst.removeIf(arete -> 
-             (arete[0] == idx && arete[1] == v0) || 
-             (arete[1] == idx && arete[0] == v0) ||
-             (arete[0] == idx && arete[1] == v1) || 
-             (arete[1] == idx && arete[0] == v1)
-           );
+          ArrayList<int[]> nouveauMst = new ArrayList<int[]>(mst);
+          final int idx = i, v0 = voisins.get(0), v1 = voisins.get(1);
+          nouveauMst.removeIf(arete -> 
+            (arete[0] == idx && arete[1] == v0) || (arete[1] == idx && arete[0] == v0) ||
+            (arete[0] == idx && arete[1] == v1) || (arete[1] == idx && arete[0] == v1)
+          );
           
-          // Ajouter nouvelles arêtes avec barycentre
-          int idxBarycentre = nouveauxPoints.size() - 1;
-          nouveauMst.add(new int[]{i, idxBarycentre});
-          nouveauMst.add(new int[]{idxBarycentre, voisins.get(0)});
-          nouveauMst.add(new int[]{idxBarycentre, voisins.get(1)});
+          // Nouvelles arêtes via point Fermat
+          int idxFermat = nouveauxPoints.size() - 1;
+          nouveauMst.add(new int[]{idxFermat, v0});
+          nouveauMst.add(new int[]{idxFermat, v1});
+          nouveauMst.add(new int[]{i, idxFermat});
           
           return construireArbre(nouveauxPoints, nouveauMst, 0, new boolean[nouveauxPoints.size()]);
         }
       }
     }
-    
-    return arbre; 
+    return arbre;
   }
   
-  // distance euclidienne
+  private Point medianeFermat(Point a, Point b, Point c) {
+    if (angleObtus(a, b, c)) return a;
+    if (angleObtus(b, a, c)) return b;
+    if (angleObtus(c, a, b)) return c;
+    
+    double x = (a.x + b.x + c.x) / 3.0, y = (a.y + b.y + c.y) / 3.0;
+    return new Point((int)x, (int)y);
+  }
+  
+  // verifier angle (>120°)
+  private boolean angleObtus(Point sommet, Point p1, Point p2) {
+    int dx1 = p1.x - sommet.x, dy1 = p1.y - sommet.y;
+    int dx2 = p2.x - sommet.x, dy2 = p2.y - sommet.y;
+    return dx1 * dx2 + dy1 * dy2 < -0.5 * Math.sqrt((dx1*dx1 + dy1*dy1) * (dx2*dx2 + dy2*dy2));
+  }
+  
+  // Distance euclidienne
   private double distance(Point p1, Point p2) {
     return Math.sqrt((p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y));
   }
