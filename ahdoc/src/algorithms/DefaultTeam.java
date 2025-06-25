@@ -4,8 +4,7 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
+
 
 public class DefaultTeam {
   public Tree2D calculSteiner(ArrayList<Point> points) {
@@ -75,23 +74,20 @@ public class DefaultTeam {
           Point b = points.get(voisins.get(j));  
           Point c = points.get(voisins.get(k));
           
-          // Calculer point Fermat pour triangle ABC
           Point fermat = pointFermat(a, b, c);
           
-          // Test d'amélioration
           double coutOriginal = distance(a, b) + distance(a, c);
           double coutFermat = distance(fermat, a) + distance(fermat, b) + distance(fermat, c);
           
           if (coutFermat < coutOriginal - 1.0) { // Seuil d'amélioration
             ajouterPointSteiner(points, mst, i, new int[]{voisins.get(j), voisins.get(k)}, fermat);
-            return; // Une amélioration par appel
+            return; 
           }
         }
       }
     }
   }
-  
-  // Règle 4 points: optimiser étoiles avec centre + 3 branches
+
   private void appliquerRegle4Points(ArrayList<Point> points, ArrayList<int[]> mst) {
     for (int centre = 0; centre < points.size(); centre++) {
       ArrayList<Integer> voisins = voisinsDans(mst, centre);
@@ -103,10 +99,8 @@ public class DefaultTeam {
         Point p2 = points.get(voisins.get(1)); 
         Point p3 = points.get(voisins.get(2));
         
-        // Point Steiner = barycentre pondéré par distances inverses
         Point steiner4 = barycentrePondere(pCentre, p1, p2, p3);
         
-        // Test d'amélioration
         double coutOriginal = distance(pCentre, p1) + distance(pCentre, p2) + distance(pCentre, p3);
         double coutSteiner = distance(steiner4, pCentre) + distance(steiner4, p1) + 
                             distance(steiner4, p2) + distance(steiner4, p3);
@@ -123,7 +117,7 @@ public class DefaultTeam {
   // Règle 5 points: configuration complexe avec limite de tentatives
   private void appliquerRegle5Points(ArrayList<Point> points, ArrayList<int[]> mst) {
     int tentatives = 0;
-    final int MAX_TENTATIVES = 20; // Limite pour éviter explosion temps
+    final int MAX_TENTATIVES = 20; 
     
     for (int centre = 0; centre < points.size() && tentatives < MAX_TENTATIVES; centre++) {
       ArrayList<Integer> voisins = voisinsDans(mst, centre);
@@ -142,16 +136,14 @@ public class DefaultTeam {
           coutOriginal += distance(pCentre, points.get(voisins.get(i)));
         }
         
-        // Coût approximatif avec points Steiner
-        double coutSteiner = distance(steiners[0], steiners[1]); // Liaison entre Steiners
+        double coutSteiner = distance(steiners[0], steiners[1]); 
         for (Point s : steiners) {
           for (Point p : points5) {
-            coutSteiner += distance(s, p) * 0.2; // Pondération distribué
+            coutSteiner += distance(s, p) * 0.2; 
           }
         }
         
         if (coutSteiner < coutOriginal - 3.0) {
-          // Ajout simplifié: un seul point Steiner au lieu de 2
           ajouterPointSteiner(points, mst, centre, 
             new int[]{voisins.get(0), voisins.get(1), voisins.get(2), voisins.get(3)}, steiners[0]);
           return;
@@ -162,9 +154,7 @@ public class DefaultTeam {
     }
   }
   
-  // Calcul point Fermat pour 3 points (géométrie classique)
   private Point pointFermat(Point a, Point b, Point c) {
-    // Si un angle >= 120°, le point Fermat est au sommet de cet angle
     if (angleGrand(a, b, c)) return a;
     if (angleGrand(b, a, c)) return b; 
     if (angleGrand(c, a, b)) return c;
@@ -182,8 +172,7 @@ public class DefaultTeam {
       double dc = distance(current, c);
       
       if (da + db + dc < 0.001) break;
-      
-      // Déplacement vers moyenne pondérée par distance inverse
+
       x = (a.x/da + b.x/db + c.x/dc) / (1/da + 1/db + 1/dc);
       y = (a.y/da + b.y/db + c.y/dc) / (1/da + 1/db + 1/dc);
     }
@@ -197,8 +186,7 @@ public class DefaultTeam {
     double d2 = Math.max(distance(centre, p2), 0.1);
     double d3 = Math.max(distance(centre, p3), 0.1);
     
-    // Poids inversement proportionnels aux distances
-    double w0 = 2.0; // Poids du centre
+    double w0 = 2.0; 
     double w1 = 1.0 / d1;
     double w2 = 1.0 / d2; 
     double w3 = 1.0 / d3;
@@ -210,9 +198,7 @@ public class DefaultTeam {
     return new Point((int)x, (int)y);
   }
   
-  // Configuration Steiner pour 5 points (approximation rapide)
   private Point[] calculerSteiner5Points(Point[] points5) {
-    // Premier point: centroïde général
     Point centroide = new Point(0, 0);
     for (Point p : points5) {
       centroide.x += p.x;
@@ -221,7 +207,6 @@ public class DefaultTeam {
     centroide.x /= 5;
     centroide.y /= 5;
     
-    // Deuxième point: barycentre des 3 premiers points
     Point bary3 = new Point(
       (points5[0].x + points5[1].x + points5[2].x) / 3,
       (points5[0].y + points5[1].y + points5[2].y) / 3
@@ -230,7 +215,6 @@ public class DefaultTeam {
     return new Point[]{centroide, bary3};
   }
   
-  // Ajouter point Steiner et reconfigurer MST
   private void ajouterPointSteiner(ArrayList<Point> points, ArrayList<int[]> mst, 
                                   int centre, int[] voisins, Point steiner) {
     points.add(steiner);
@@ -243,7 +227,6 @@ public class DefaultTeam {
       );
     }
     
-    // Nouvelles arêtes via point Steiner
     mst.add(new int[]{centre, idxSteiner});
     for (int v : voisins) {
       mst.add(new int[]{v, idxSteiner});
