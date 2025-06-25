@@ -86,7 +86,7 @@ public class DefaultTeam {
         
         Point barycentre = new Point((a.x + b.x + c.x) / 3, (a.y + b.y + c.y) / 3);
 
-        double distOriginale = distance(a, b) + distance(a, c);
+        double distOriginale = distance(a, b) + distance(a, c);   
         double distBarycentre = distance(barycentre, b) + distance(barycentre, c) + distance(a, barycentre);
         
         if (distBarycentre < distOriginale) {
